@@ -5,7 +5,7 @@ query read_lines( limit ):
   select
       *
     from main
-    order by lnr
+    order by vidx_encode( vlnr )
     limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -13,7 +13,7 @@ query read_lines():
   select
       *
     from main
-    order by lnr;
+    order by vidx_encode( vlnr );
 
 -- ---------------------------------------------------------------------------------------------------------
 query count_lines():

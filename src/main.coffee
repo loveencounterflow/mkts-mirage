@@ -58,13 +58,14 @@ as_sql = ( x ) ->
   lnr             = 0
   return $ { first, last, }, ( line, send ) =>
     #.......................................................................................................
+    ### TAINT consider to store SQL as `fragment`s in `mkts.icql` ###
     if line is first
       send "drop table if exists main;"
       send "create table main ( "
-      send "    lnr       integer unique primary key,"
+      send "    vlnr      json unique primary key,"
       send "    stamped   boolean default false,"
       send "    line      text );"
-      send "insert into main ( lnr, line ) values"
+      send "insert into main ( vlnr, line ) values"
     #.......................................................................................................
     else if line is last
       send ";"
@@ -74,7 +75,7 @@ as_sql = ( x ) ->
       lnr  += +1
       comma = if is_first_record then '' else ','
       is_first_record = false
-      send "#{comma}( #{lnr}, #{as_sql line} )"
+      send """#{comma}( "[#{lnr}]", #{as_sql line} )"""
   #.........................................................................................................
   return null
 
