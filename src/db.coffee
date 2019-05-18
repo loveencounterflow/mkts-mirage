@@ -112,6 +112,14 @@ ICQL                      = require 'icql'
     JSON.stringify ( word for word in text.split /\s+/ when word isnt '' )
 
   # #---------------------------------------------------------------------------------------------------------
+  # db.$.function 'vidx_encode_textual', { deterministic: true, varargs: false }, ( vidx ) ->
+  #   ( ( "#{idx}".padStart 6, '0' ) for idx in ( JSON.parse vidx ) ).join '-'
+
+  #---------------------------------------------------------------------------------------------------------
+  db.$.function 'vidx_encode', { deterministic: true, varargs: false }, ( vidx ) ->
+    Uint32Array.from JSON.parse vidx
+
+  # #---------------------------------------------------------------------------------------------------------
   # db.$.function 'get_nth_word', { deterministic: true, varargs: false }, ( text, nr ) ->
   #   ### NB SQLite has no string aggregation, no string splitting, and in general does not implement
   #   table-returning user-defined functions (except in C, see the `prefixes` extension). Also, you can't
