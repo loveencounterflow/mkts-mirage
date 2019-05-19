@@ -64,6 +64,7 @@ ICQL                      = require 'icql'
 @set_pragmas = ( db ) ->
   db.$.pragma 'foreign_keys = on'
   db.$.pragma 'synchronous = off' ### see https://sqlite.org/pragma.html#pragma_synchronous ###
+  db.$.pragma 'journal_mode = WAL' ### see https://github.com/JoshuaWise/better-sqlite3/issues/125 ###
   #.........................................................................................................
   return null
 
