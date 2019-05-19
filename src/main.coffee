@@ -145,17 +145,22 @@ _$count = ( step ) ->
   R.rel_target_path       = relpath R.target_path_sql
   return R
 
+#-----------------------------------------------------------------------------------------------------------
+@acquire = ( settings ) -> new Promise ( resolve, reject ) =>
+  try
+    await @write_sql_cache  settings
+    await @populate_db      settings
+  finally
+    await @cleanup          settings
+  resolve()
 
 ############################################################################################################
 unless module.parent?
-  testing = true
-  L = @
+  MIRAGE  = @
   do ->
     #.......................................................................................................
-    settings = L.new_settings './README.md'
-    await L.write_sql_cache     settings
-    await L.populate_db         settings
-    await L.cleanup             settings
+    settings = MIRAGE.new_settings './README.md'
+    await MIRAGE.acquire settings
     delete settings.db
     debug 'µ69688', settings
     help 'ok'
