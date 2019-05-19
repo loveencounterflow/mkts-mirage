@@ -6,8 +6,8 @@
   "dependencies": {
     "better-sqlite3": "^5.4.0",
     "cnd": "^4.5.0",
-    "icql": "^1.4.0",
-    "intertype": "^2.2.1",
+    "icql": "^2.0.0",
+    "intertype": "^2.3.0",
     "mkdirp": "^0.5.1",
     "pipedreams": "^7.6.1",
     "tmp-promise": "^1.1.0"
