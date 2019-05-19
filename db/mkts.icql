@@ -1,8 +1,25 @@
 
+-- -- ---------------------------------------------------------------------------------------------------------
+-- fragment create_table_main_first():
+--   drop table if exists main;
+--   create table main (
+--       vlnr      json unique primary key,
+--       stamped   boolean default false,
+--       line      text );
+--   insert into main ( vlnr, line ) values
+
+-- -- ---------------------------------------------------------------------------------------------------------
+-- fragment create_table_main_first():
+--   ;
+
+-- -- ---------------------------------------------------------------------------------------------------------
+-- fragment create_table_main_first( comma, vlnr, line ):
+--   $comma ( $vlnr, $line )
 
 -- ---------------------------------------------------------------------------------------------------------
 query read_lines( limit ):
   select
+      rowid,
       *
     from main
     order by vidx_encode( vlnr )
@@ -11,13 +28,44 @@ query read_lines( limit ):
 -- ---------------------------------------------------------------------------------------------------------
 query read_lines():
   select
+      rowid,
       *
     from main
     order by vidx_encode( vlnr );
 
 -- ---------------------------------------------------------------------------------------------------------
+query read_unstamped_lines():
+  select
+      rowid,
+      *
+    from main
+    where not stamped
+    order by vidx_encode( vlnr );
+
+-- ---------------------------------------------------------------------------------------------------------
 query count_lines():
   select count(*) from main;
+
+-- ---------------------------------------------------------------------------------------------------------
+query get_stats():
+  select null as key, null as count where false union all
+    select 'all lines',     count(*) from main union all
+    select 'active lines',  count(*) from main where not stamped union all
+    select 'stamped lines', count(*) from main where     stamped union all
+    select null, null where false;
+
+-- ---------------------------------------------------------------------------------------------------------
+procedure insert_line( next_vlnr ):
+
+-- ---------------------------------------------------------------------------------------------------------
+query xxx_select( rowid ):
+  select * from main where rowid = $rowid;
+
+-- ---------------------------------------------------------------------------------------------------------
+procedure stamp_line( rowid ):
+  update main
+    set stamped = true
+    where rowid = $rowid;
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure vidx_create_and_populate_tables():
