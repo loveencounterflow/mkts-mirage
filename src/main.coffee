@@ -62,14 +62,15 @@ as_sql = ( x ) ->
     if line is first
       send "drop table if exists main;"
       send "create table main ( "
-      send "    vlnr      json unique primary key,"
+      send "    vlnr      json unique,"
       send "    stamped   boolean default false,"
-      send "    line      text );"
-      send "insert into main ( vlnr, line ) values"
+      send "    key       text default '^mktscript',"
+      send "    value     text );"
+      send "insert into main ( vlnr, value ) values"
     #.......................................................................................................
     else if line is last
       send ";"
-      send "create unique index idx_main_lnr on main ( lnr );"
+      # send "create unique index idx_main_lnr on main ( lnr );"
     #.......................................................................................................
     else
       lnr  += +1
@@ -118,8 +119,8 @@ _$count = ( step ) ->
   validate.object settings
   S = settings
   S.db.$.read S.target_path_sql
-  for row from S.db.read_lines { limit: 10, }
-    info jr row
+  # for row from S.db.read_lines { limit: 10, }
+  #   info jr row
   line_count = S.db.$.first_value S.db.count_lines()
   info "MKTS document #{rpr S.rel_source_path} has #{line_count} lines"
   resolve()
