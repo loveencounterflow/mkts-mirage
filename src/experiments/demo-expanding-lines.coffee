@@ -18,11 +18,14 @@ FS                        = require 'fs'
 PATH                      = require 'path'
 PD                        = require 'pipedreams'
 { $
+  $watch
   $async
-  select }                = PD
+  select
+  stamp }                 = PD
 { assign
   jr }                    = CND
-@_drop_extension          = ( path ) -> path[ ... path.length - ( PATH.extname path ).length ]
+first                     = Symbol 'first'
+last                      = Symbol 'last'
 types                     = require '../types'
 #...........................................................................................................
 { isa
@@ -61,33 +64,87 @@ MIRAGE                    = require '../..'
   return R
 
 #-----------------------------------------------------------------------------------------------------------
-@translate_document = ( me ) ->
-  validate.object me
-  db2 = ( MIRAGE.new_settings me ).db
-  for row from me.db.read_unstamped_lines()
+@$split_words = ( S ) -> $ ( d, send ) =>
+  return send d unless select d, '^mktscript'
+  { text, vlnr: prv_vlnr, } = d.value
+  nxt_vlnr = @new_level S.mirage, prv_vlnr
+    # unless isa.blank_text row.value
+  for word in text.split /\s+/
+    continue if word is ''
+    nxt_vlnr = @advance S.mirage, nxt_vlnr
+    send PD.new_event '^word', { text: word, vlnr: nxt_vlnr, }
+  send stamp d
+
+#-----------------------------------------------------------------------------------------------------------
+@feed_source = ( S, source, limit = Infinity ) ->
+  dbr = S.mirage.db
+  nr  = 0
+  for row from dbr.read_unstamped_lines()
+    nr   += +1
+    break if nr > limit
     ### TAINT how to convert vlnr in ICQL? ###
-    prv_vlnr  = JSON.parse row.vlnr
-    break if prv_vlnr[ 0 ] > 10
-    nxt_vlnr  = @new_level me, prv_vlnr
-    unless isa.blank_text row.value
-      words     = row.value.split /\s+/
-      urge "processing line #{prv_vlnr} (#{words.length} words)"
-      for word in words
-        nxt_vlnr = @advance me, nxt_vlnr
-        # debug 'µ20209', nxt_vlnr
-        # me.db.insert_line { nxt_vlnr, }
-    # debug 'µ10021', rpr row.vlnr
-    db2.stamp_line { rowid: row.rowid, }
+    vlnr_txt  = row.vlnr
+    vlnr      = JSON.parse row.vlnr
+    source.send PD.new_event row.key, { text: row.value, vlnr, vlnr_txt, rowid: row.rowid, }
+  source.end()
+  return null
+
+#-----------------------------------------------------------------------------------------------------------
+@$feed_db = ( S ) ->
+  ### TAINT stopgap measure; should be implemented in ICQL ###
+  db2 = ( MIRAGE.new_settings S.mirage ).db
+  return $watch ( d ) =>
+    return null unless d.stamped
+    ### TAINT how to convert vlnr in ICQL? ###
+    db2.stamp_line { vlnr: d.value.vlnr_txt, }
+    return null
+
+#-----------------------------------------------------------------------------------------------------------
+@_$show = ( S ) -> $watch ( d ) =>
+  if d.stamped then color = CND.grey
+  else
+    switch d.key
+      when '^word' then color = CND.gold
+      else color = CND.white
+  info color jr d
+
+#-----------------------------------------------------------------------------------------------------------
+@_$on_finish = ( S ) ->
+  dbr = S.mirage.db
   #.........................................................................................................
-  for row from me.db.read_lines()
-    color = if row.stamped then CND.grey else CND.green
-    key   = row.key.padEnd  12
-    vlnr  = row.vlnr.padEnd 12
-    info color "#{vlnr} #{( if row.stamped then 'S' else ' ' )} #{key} #{rpr row.value[ .. 40 ]}"
-    break if ( JSON.parse row.vlnr )[ 0 ] > 20
+  return $watch { last, }, ( d ) =>
+    return null unless d is last
+    #.......................................................................................................
+    for row from dbr.read_lines()
+      color = if row.stamped then CND.grey else CND.green
+      key   = row.key.padEnd  12
+      vlnr  = row.vlnr.padEnd 12
+      info color "#{vlnr} #{( if row.stamped then 'S' else ' ' )} #{key} #{rpr row.value[ .. 40 ]}"
+      break if ( JSON.parse row.vlnr )[ 0 ] > 20
+    #.......................................................................................................
+    for row from dbr.get_stats()
+      info "#{row.key}: #{row.count}"
+    #.......................................................................................................
+    return null
+
+#-----------------------------------------------------------------------------------------------------------
+@translate_document = ( me ) -> new Promise ( resolve, reject ) =>
+  ### TAINT add suitable types ###
+  validate.object me
+  S         = { mirage: me, }
+  source    = PD.new_push_source()
+  limit     = 12
   #.........................................................................................................
-  for row from me.db.get_stats()
-    info "#{row.key}: #{row.count}"
+  pipeline  = []
+  pipeline.push source
+  pipeline.push @$split_words S
+  pipeline.push @$feed_db     S
+  pipeline.push @_$show()
+  pipeline.push @_$on_finish  S
+  pipeline.push PD.$drain => resolve()
+  #.........................................................................................................
+  PD.pull pipeline...
+  @feed_source S, source, limit
   return null
 
 
