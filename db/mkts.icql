@@ -62,10 +62,8 @@ query xxx_select( rowid ):
   select * from main where rowid = $rowid;
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure stamp_line( rowid ):
-  update main
-    set stamped = true
-    where rowid = $rowid;
+procedure stamp_line( rowid ): update main set stamped = true where rowid = $rowid;
+procedure stamp_line( vlnr  ): update main set stamped = true where vlnr  = e( 'µ44333', $vlnr);
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure vidx_create_and_populate_tables():
