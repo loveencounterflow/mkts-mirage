@@ -43,6 +43,15 @@ ICE                       = require 'icepick'
 MIRAGE                    = require '../..'
 do_validate               = true
 
+###
+
+TAINT consider to backport these flags to PipeDreams:
+
+* [ ] `dirty`—whether any property of a datom has beem modified;
+* [ ] `fresh`—whether a datom originated from within the stream, not from the source;
+* [X] `stamped`—whether a datom has been processed.
+
+###
 
 #-----------------------------------------------------------------------------------------------------------
 @new_datom = ( P ... ) ->
@@ -53,6 +62,10 @@ do_validate               = true
 
 #-----------------------------------------------------------------------------------------------------------
 @stamp = ( d ) ->
+  ### NOTE we could use `icepick`'s 'copy-on-write'/structural sharing features here but that is probably
+  of little effect given how small our objects are; we therefore use the much simpler 'copy-on-thaw' and
+  re-freezing while enjoying the simplicity and clarity of intermittent (and contained) old-fashioned data
+  mutation. ###
   R         = ICE.thaw d
   R.stamped = true
   R.dirty   = true
