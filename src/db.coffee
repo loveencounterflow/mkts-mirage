@@ -104,6 +104,12 @@ ICQL                      = require 'icql'
     return x
 
   #---------------------------------------------------------------------------------------------------------
+  db.$.function 'e', { deterministic: false, varargs: false }, ( mark, x ) ->
+    ### Output text to command line, but returns single input value so can be used within an expression. ###
+    urge ( CND.grey "DB #{mark}" ), rpr x
+    return x
+
+  #---------------------------------------------------------------------------------------------------------
   db.$.function 'contains_word', { deterministic: true, varargs: false }, ( text, probe ) ->
     return if ( ( ' ' + text + ' ' ).indexOf ' ' + probe + ' ' ) > -1 then 1 else 0
 
