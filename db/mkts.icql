@@ -3,18 +3,18 @@
 -- fragment create_table_main_first():
 --   drop table if exists main;
 --   create table main (
---       vlnr      json unique primary key,
+--       vlnr_txt      json unique primary key,
 --       stamped   boolean default false,
 --       line      text );
---   insert into main ( vlnr, line ) values
+--   insert into main ( vlnr_txt, line ) values
 
 -- -- ---------------------------------------------------------------------------------------------------------
 -- fragment create_table_main_first():
 --   ;
 
 -- -- ---------------------------------------------------------------------------------------------------------
--- fragment create_table_main_first( comma, vlnr, line ):
---   $comma ( $vlnr, $line )
+-- fragment create_table_main_first( comma, vlnr_txt, line ):
+--   $comma ( $vlnr_txt, $line )
 
 -- ---------------------------------------------------------------------------------------------------------
 query read_lines( limit ):
@@ -22,7 +22,7 @@ query read_lines( limit ):
       rowid,
       *
     from main
-    order by vidx_encode( vlnr )
+    order by vidx_encode( vlnr_txt )
     limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ query read_lines():
       rowid,
       *
     from main
-    order by vidx_encode( vlnr );
+    order by vidx_encode( vlnr_txt );
 
 -- ---------------------------------------------------------------------------------------------------------
 query read_unstamped_lines():
@@ -40,7 +40,7 @@ query read_unstamped_lines():
       *
     from main
     where not stamped
-    order by vidx_encode( vlnr );
+    order by vidx_encode( vlnr_txt );
 
 -- ---------------------------------------------------------------------------------------------------------
 query count_lines():
@@ -55,7 +55,17 @@ query get_stats():
     select null, null where false;
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure insert_line( next_vlnr ):
+procedure insert( key, vlnr_txt, value, stamped ):
+  insert into
+    main    (  key,  vlnr_txt,  value,  stamped )
+    values  ( $key, $vlnr_txt, $value, $stamped );
+
+-- ---------------------------------------------------------------------------------------------------------
+procedure update( key, vlnr_txt, value, stamped ):
+  update main
+    set (  key,  value,  stamped ) =
+        ( $key, $value, $stamped )
+    where vlnr_txt = $vlnr_txt;
 
 -- ---------------------------------------------------------------------------------------------------------
 query xxx_select( rowid ):
@@ -63,7 +73,7 @@ query xxx_select( rowid ):
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure stamp_line( rowid ): update main set stamped = true where rowid = $rowid;
-procedure stamp_line( vlnr  ): update main set stamped = true where vlnr  = e( 'µ44333', $vlnr);
+procedure stamp_line( vlnr_txt  ): update main set stamped = true where vlnr_txt  = e( 'µ44333', $vlnr_txt);
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure vidx_create_and_populate_tables():
