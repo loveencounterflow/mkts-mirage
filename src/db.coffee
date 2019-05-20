@@ -124,7 +124,13 @@ ICQL                      = require 'icql'
 
   #---------------------------------------------------------------------------------------------------------
   db.$.function 'vidx_encode', { deterministic: true, varargs: false }, ( vidx ) ->
-    Uint32Array.from JSON.parse vidx
+    try
+      Uint32Array.from JSON.parse vidx
+    catch error
+      warn "µ33211 when trying to convert #{xrpr2 vidx}"
+      warn "µ33211 to a typed array, an error occurred:"
+      warn "µ33211 #{error.message}"
+      throw error
 
   # #---------------------------------------------------------------------------------------------------------
   # db.$.function 'get_nth_word', { deterministic: true, varargs: false }, ( text, nr ) ->
