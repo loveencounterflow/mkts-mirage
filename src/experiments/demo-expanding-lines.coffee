@@ -41,6 +41,10 @@ MIRAGE                    = require '../..'
 
 #-----------------------------------------------------------------------------------------------------------
 @new_level = ( me, vlnr ) ->
+  ### Given a `mirage` instance and a vectorial line number `vlnr`, return a copy of `vlnr`, call it
+  `vlnr0`, which has an index of `0` appended, thus representing the pre-first `vlnr` for a level of lines
+  derived from the one that the original `vlnr` pointed to. Call `advance mirage, vlnr0` to obtain the
+  vectorial line number of the first line of the new level. ###
   validate.nonempty_list vlnr
   R = assign [], vlnr
   R.push 0
@@ -48,6 +52,9 @@ MIRAGE                    = require '../..'
 
 #-----------------------------------------------------------------------------------------------------------
 @advance = ( me, vlnr ) ->
+  ### Given a `mirage` instance and a vectorial line number `vlnr`, return a copy of `vlnr`, call it
+  `vlnr0`, which has its last index incremented by `1`, thus representing the vectorial line number of the
+  next line in the same level that is derived from the same line as its predecessor. ###
   validate.nonempty_list vlnr
   R                     = assign [], vlnr
   R[ vlnr.length - 1 ] += +1
