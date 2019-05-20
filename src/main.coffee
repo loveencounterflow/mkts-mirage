@@ -77,7 +77,7 @@ as_sql = ( x ) ->
       lnr  += +1
       comma = if is_first_record then '' else ','
       is_first_record = false
-      send """#{comma}( "[#{lnr}]", #{as_sql line} )"""
+      send """#{comma}( '[#{lnr}]', #{as_sql line} )"""
   #.........................................................................................................
   return null
 
