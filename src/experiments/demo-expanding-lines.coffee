@@ -47,17 +47,17 @@ do_validate               = true
 
 TAINT consider to backport these flags to PipeDreams:
 
-* [ ] `dirty`—whether any property of a datom has beem modified;
-* [ ] `fresh`—whether a datom originated from within the stream, not from the source;
-* [X] `stamped`—whether a datom has been processed.
+* [ ] `$dirty`—whether any property of a datom has beem modified;
+* [ ] `$fresh`—whether a datom originated from within the stream, not from the source;
+* [X] `$stamped`—whether a datom has been processed.
 
 ###
 
 #-----------------------------------------------------------------------------------------------------------
 @new_datom = ( P ... ) ->
-  R                 = PD.new_event P...
-  R.value.vlnr_txt  = ( jr R.value.vlnr ) if ( not R.value?.vlnr_txt )? and ( R.value?.vlnr? )
-  R.fresh           = true
+  R           = PD.new_datom P...
+  R.vnr_txt   = ( jr R.$vnr ) if ( not R.vnr_txt )? and ( R.$vnr? )
+  R.$fresh    = true
   return ICE.freeze R
 
 #-----------------------------------------------------------------------------------------------------------
@@ -67,28 +67,28 @@ TAINT consider to backport these flags to PipeDreams:
   re-freezing while enjoying the simplicity and clarity of intermittent (and contained) old-fashioned data
   mutation. ###
   R         = ICE.thaw d
-  R.stamped = true
-  R.dirty   = true
+  R.$stamped = true
+  R.$dirty   = true
   return ICE.freeze R
 
 #-----------------------------------------------------------------------------------------------------------
-@new_vlnr_level = ( S, vlnr ) ->
-  ### Given a `mirage` instance and a vectorial line number `vlnr`, return a copy of `vlnr`, call it
-  `vlnr0`, which has an index of `0` appended, thus representing the pre-first `vlnr` for a level of lines
-  derived from the one that the original `vlnr` pointed to. ###
-  validate.nonempty_list vlnr
-  R = assign [], vlnr
+@new_vnr_level = ( S, vnr ) ->
+  ### Given a `mirage` instance and a vectorial line number `vnr`, return a copy of `vnr`, call it
+  `vnr0`, which has an index of `0` appended, thus representing the pre-first `vnr` for a level of lines
+  derived from the one that the original `vnr` pointed to. ###
+  validate.nonempty_list vnr
+  R = assign [], vnr
   R.push 0
   return R
 
 #-----------------------------------------------------------------------------------------------------------
-@advance_vlnr = ( S, vlnr ) ->
-  ### Given a `mirage` instance and a vectorial line number `vlnr`, return a copy of `vlnr`, call it
-  `vlnr0`, which has its last index incremented by `1`, thus representing the vectorial line number of the
+@advance_vnr = ( S, vnr ) ->
+  ### Given a `mirage` instance and a vectorial line number `vnr`, return a copy of `vnr`, call it
+  `vnr0`, which has its last index incremented by `1`, thus representing the vectorial line number of the
   next line in the same level that is derived from the same line as its predecessor. ###
-  validate.nonempty_list vlnr
-  R                     = assign [], vlnr
-  R[ vlnr.length - 1 ] += +1
+  validate.nonempty_list vnr
+  R                    = assign [], vnr
+  R[ vnr.length - 1 ] += +1
   return R
 
 #-----------------------------------------------------------------------------------------------------------
@@ -96,32 +96,37 @@ TAINT consider to backport these flags to PipeDreams:
   return send d unless select d, '^mktscript'
   #.........................................................................................................
   send @stamp d
-  text      = d.value.text
-  prv_vlnr  = d.value.vlnr
-  nxt_vlnr  = @new_vlnr_level S, prv_vlnr
+  text      = d.text
+  prv_vnr   = d.$vnr
+  nxt_vnr  = @new_vnr_level S, prv_vnr
   #.........................................................................................................
     # unless isa.blank_text row.value
   for word in text.split /\s+/
     continue if word is ''
-    nxt_vlnr = @advance_vlnr S, nxt_vlnr
-    send @new_datom '^word', { text: word, vlnr: nxt_vlnr, }
+    nxt_vnr = @advance_vnr S, nxt_vnr
+    send @new_datom '^word', { text: word, $vnr: nxt_vnr, }
   #.........................................................................................................
   return null
 
 #-----------------------------------------------------------------------------------------------------------
 @datom_from_row = ( S, row ) ->
-  ### TAINT how to convert vlnr in ICQL? ###
-  vlnr_txt  = row.vlnr_txt
-  vlnr      = JSON.parse vlnr_txt
-  return ICE.freeze PD.new_event row.key, { text: row.value, vlnr, vlnr_txt, }
+  ### TAINT how to convert vnr in ICQL? ###
+  debug 'µ22299', row
+  vnr_txt     = row.vnr_txt
+  $vnr        = JSON.parse vnr_txt
+  R           = ICE.freeze PD.new_datom row.key, { text: row.value, $vnr, vnr_txt, }
+  R.$stamped  = true if row.stamped
+  debug 'µ22299', R
+  debug 'µ22299', PD.new_datom '^foo', 42
+  debug 'µ22299', PD.new_datom '^foo', { x: 42, }
+  debug 'µ22299', isa.object { x: 42, }
+  return R
 
 #-----------------------------------------------------------------------------------------------------------
 @row_from_datom = ( S, d ) ->
-  v       = d.value
-  stamped = d.stamped ? false
   ### TAINT how to convert booleans in ICQL? ###
-  stamped = if stamped then 1 else 0
-  R       = ICE.freeze { key: d.key, vlnr_txt: v.vlnr_txt, value: v.text, stamped, }
+  stamped   = if d.$stamped then 1 else 0
+  R         = ICE.freeze { key: d.key, vnr_txt: d.vnr_txt, value: d.text, stamped, }
   validate.mirage_main_row R if do_validate
   return R
 
@@ -131,7 +136,7 @@ TAINT consider to backport these flags to PipeDreams:
   nr  = 0
   #.........................................................................................................
   for row from dbr.read_unstamped_lines()
-    nr   += +1
+    nr += +1
     break if nr > limit
     source.send @datom_from_row S, row
   #.........................................................................................................
@@ -143,12 +148,12 @@ TAINT consider to backport these flags to PipeDreams:
   ### TAINT stopgap measure; should be implemented in ICQL ###
   db2 = ( MIRAGE.new_settings S.mirage ).db
   return $watch ( d ) =>
-    ### TAINT how to convert vlnr in ICQL? ###
+    ### TAINT how to convert vnr in ICQL? ###
     row = @row_from_datom S, d
     try
       ### TAINT consider to use upsert instead https://www.sqlite.org/lang_UPSERT.html ###
-      if      d.fresh then db2.insert row
-      else if d.dirty then db2.update row
+      if      d.$fresh then db2.insert row
+      else if d.$dirty then db2.update row
     catch error
       warn "µ12133 when trying to insert or update row #{jr row}"
       warn "µ12133 an error occurred:"
@@ -158,7 +163,7 @@ TAINT consider to backport these flags to PipeDreams:
 
 #-----------------------------------------------------------------------------------------------------------
 @_$show = ( S ) -> $watch ( d ) =>
-  if d.stamped then color = CND.grey
+  if d.$stamped then color = CND.grey
   else
     switch d.key
       when '^word' then color = CND.gold
@@ -175,8 +180,8 @@ TAINT consider to backport these flags to PipeDreams:
     for row from dbr.read_lines()
       color = if row.stamped then CND.grey else CND.green
       key   = row.key.padEnd      12
-      vlnr  = row.vlnr_txt.padEnd 12
-      info color "#{vlnr} #{( if row.stamped then 'S' else ' ' )} #{key} #{rpr row.value[ .. 40 ]}"
+      vnr   = row.vnr_txt.padEnd  12
+      info color "#{vnr} #{( if row.stamped then 'S' else ' ' )} #{key} #{rpr row.value[ .. 40 ]}"
     #.......................................................................................................
     for row from dbr.get_stats()
       info "#{row.key}: #{row.count}"
@@ -193,9 +198,9 @@ TAINT consider to backport these flags to PipeDreams:
   #.........................................................................................................
   pipeline  = []
   pipeline.push source
+  pipeline.push PD.$show()
   pipeline.push @$split_words S
   pipeline.push @$feed_db     S
-  # pipeline.push PD.$show()
   # pipeline.push @_$show()
   pipeline.push @_$on_finish  S
   pipeline.push PD.$drain => resolve()

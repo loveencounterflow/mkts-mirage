@@ -119,15 +119,15 @@ ICQL                      = require 'icql'
     JSON.stringify ( word for word in text.split /\s+/ when word isnt '' )
 
   # #---------------------------------------------------------------------------------------------------------
-  # db.$.function 'vidx_encode_textual', { deterministic: true, varargs: false }, ( vidx ) ->
-  #   ( ( "#{idx}".padStart 6, '0' ) for idx in ( JSON.parse vidx ) ).join '-'
+  # db.$.function 'vnr_encode_textual', { deterministic: true, varargs: false }, ( vnr ) ->
+  #   ( ( "#{idx}".padStart 6, '0' ) for idx in ( JSON.parse vnr ) ).join '-'
 
   #---------------------------------------------------------------------------------------------------------
-  db.$.function 'vidx_encode', { deterministic: true, varargs: false }, ( vidx ) ->
+  db.$.function 'vnr_encode', { deterministic: true, varargs: false }, ( vnr ) ->
     try
-      Uint32Array.from JSON.parse vidx
+      Uint32Array.from JSON.parse vnr
     catch error
-      warn "µ33211 when trying to convert #{xrpr2 vidx}"
+      warn "µ33211 when trying to convert #{xrpr2 vnr}"
       warn "µ33211 to a typed array, an error occurred:"
       warn "µ33211 #{error.message}"
       throw error
