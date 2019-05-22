@@ -35,19 +35,19 @@ ICQL                      = require 'icql'
   abspath }               = require './helpers'
 
 #-----------------------------------------------------------------------------------------------------------
-@get_icql_settings = ->
+@get_icql_settings = ( db_path = null ) ->
   ### TAINT path within node_modules might differ ###
   ### TAINT extensions should conceivably be configured in `*.icql` file or similar ###
   # R.db_path   = join_path __dirname, '../../db/data.db'
   R                 = {}
   R.connector       = require 'better-sqlite3'
-  R.db_path         = abspath './db/mkts.db'
+  R.db_path         = db_path ? abspath './db/mkts.db'
   R.icql_path       = abspath './db/mkts.icql'
   return R
 
 #-----------------------------------------------------------------------------------------------------------
 @new_db = ( settings ) ->
-  db                    = ICQL.bind @get_icql_settings()
+  db                    = ICQL.bind @get_icql_settings ( settings?.db_path ? null )
   clear_db              = settings?.clear ? false
   @load_extensions      db
   @set_pragmas          db

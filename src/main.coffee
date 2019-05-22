@@ -134,12 +134,11 @@ _$count = ( step ) ->
   resolve()
 
 #-----------------------------------------------------------------------------------------------------------
-@new_settings = ( settings ) ->
+@new_mirage = ( settings ) ->
   validate.true ( isa_text = isa.text settings ) or ( isa.object settings )
   settings                = { source_path: settings, } if isa_text
   R                       = {}
   R.db                    = ( require './db' ).new_db { clear: false, }
-  R.testing               = settings.testing ? false
   R.source_path           = settings.source_path
   R.rel_source_path       = relpath R.source_path
   return R
@@ -156,7 +155,7 @@ unless module.parent?
   MIRAGE  = @
   do ->
     #.......................................................................................................
-    mirage = MIRAGE.new_settings './README.md'
+    mirage = MIRAGE.new_mirage './README.md'
     await MIRAGE.acquire mirage
     delete mirage.db
     debug 'µ69688', mirage

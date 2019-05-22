@@ -120,7 +120,7 @@ do_validate               = true
 #-----------------------------------------------------------------------------------------------------------
 @$feed_db = ( S ) ->
   ### TAINT stopgap measure; should be implemented in ICQL ###
-  db2 = ( MIRAGE.new_settings S.mirage ).db
+  db2 = ( MIRAGE.new_mirage S.mirage ).db
   return $watch ( d ) =>
     ### TAINT how to convert vnr in ICQL? ###
     row = @row_from_datom S, d
@@ -190,7 +190,7 @@ unless module.parent?
   testing = true
   do =>
     #.......................................................................................................
-    mirage = MIRAGE.new_settings './README.md'
+    mirage = MIRAGE.new_mirage './README.md'
     await MIRAGE.acquire      mirage
     await @translate_document mirage
     help 'ok'
