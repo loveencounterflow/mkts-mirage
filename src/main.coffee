@@ -29,6 +29,7 @@ types                     = require './types'
   validate
   declare
   size_of
+  last_of
   type_of }               = types
 #...........................................................................................................
 { assign
@@ -36,12 +37,7 @@ types                     = require './types'
   relpath }               = require './helpers'
 #...........................................................................................................
 require                   './exception-handler'
-TMP                       = require 'tmp-promise'
 
-
-#-----------------------------------------------------------------------------------------------------------
-last_of   = ( x ) -> x[ ( size_of x ) - 1 ]
-@$as_line = => $ ( line, send ) => send line + '\n'
 
 #-----------------------------------------------------------------------------------------------------------
 as_sql = ( x ) ->
@@ -82,26 +78,35 @@ as_sql = ( x ) ->
   return null
 
 #-----------------------------------------------------------------------------------------------------------
-@$tee_write_sql = ( target_path_sql ) =>
-  pipeline = []
+@_$tee_without_filter = ( bystream ) ->
+  ### Given a `bystream`, send a data down both the mainstream and the bystream. This allows e.g. to log all
+  events to a file sink while continuing to process the same data in the mainline. **NB** that in
+  contradistinction to `pull-tee`, you can only divert to a single by-stream with each call to `PS.$tee` ###
+  return ( require 'pull-tee' ) bystream
+
+#-----------------------------------------------------------------------------------------------------------
+@$tee_compile_sql = ( target_path_sql, handler ) =>
+  collector = []
+  pipeline  = []
   pipeline.push @$as_sql()
-  pipeline.push @$as_line()
-  pipeline.push PD.write_to_file target_path_sql
+  # pipeline.push @$as_line()
+  pipeline.push PD.$collect { collector, }
+  pipeline.push PD.$drain -> handler null, collector.join '\n'
   return PD.$tee PD.pull pipeline...
 
 #-----------------------------------------------------------------------------------------------------------
-@write_sql_cache = ( settings ) -> new Promise ( resolve, reject ) =>
+@compile_sql = ( settings ) -> new Promise ( resolve, reject ) =>
   validate.object settings
   S = settings
-  help "#{rpr S.rel_source_path} -> #{S.rel_target_path}"
+  help "reading #{rpr S.rel_source_path}"
   #.........................................................................................................
   pipeline = []
   pipeline.push PD.read_from_file S.source_path
   pipeline.push PD.$split()
-  pipeline.push @$tee_write_sql S.target_path_sql
-  pipeline.push PD.$drain =>
-    help "wrote output to #{rpr S.rel_target_path}"
-    resolve()
+  pipeline.push @$tee_compile_sql S, ( error, sql ) =>
+    help "wrote output to #{rpr S.target_path_sql}"
+    resolve sql
+  pipeline.push PD.$drain()
   PD.pull pipeline...
   #.........................................................................................................
   return null
@@ -116,14 +121,11 @@ _$count = ( step ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@populate_db = ( settings ) -> new Promise ( resolve, reject ) =>
-  validate.object settings
-  S = settings
-  S.db.$.read S.target_path_sql
-  # for row from S.db.read_lines { limit: 10, }
-  #   info jr row
-  line_count = S.db.$.first_value S.db.count_lines()
-  info "MKTS document #{rpr S.rel_source_path} has #{line_count} lines"
+@populate_db = ( me, sql ) -> new Promise ( resolve, reject ) =>
+  validate.object me
+  me.db.$.execute sql
+  line_count = me.db.$.first_value me.db.count_lines()
+  info "MKTS document #{rpr me.rel_source_path} has #{line_count} lines"
   resolve()
 
 #-----------------------------------------------------------------------------------------------------------
@@ -134,37 +136,30 @@ _$count = ( step ) ->
 #-----------------------------------------------------------------------------------------------------------
 @new_settings = ( settings ) ->
   validate.true ( isa_text = isa.text settings ) or ( isa.object settings )
-  settings = { source_path: settings, } if isa_text
-  tmp                     = TMP.fileSync()
+  settings                = { source_path: settings, } if isa_text
   R                       = {}
   R.db                    = ( require './db' ).new_db { clear: false, }
   R.testing               = settings.testing ? false
-  R.tmpfile_path          = tmp.name
-  R.remove_tmpfile        = tmp.removeCallback
-  R.target_path_sql       = R.tmpfile_path
   R.source_path           = settings.source_path
   R.rel_source_path       = relpath R.source_path
-  R.rel_target_path       = relpath R.target_path_sql
   return R
 
 #-----------------------------------------------------------------------------------------------------------
-@acquire = ( settings ) -> new Promise ( resolve, reject ) =>
-  try
-    await @write_sql_cache  settings
-    await @populate_db      settings
-  finally
-    await @cleanup          settings
+@acquire = ( me ) -> new Promise ( resolve, reject ) =>
+  sql = await @compile_sql me
+  await @populate_db me, sql
   resolve()
+
 
 ############################################################################################################
 unless module.parent?
   MIRAGE  = @
   do ->
     #.......................................................................................................
-    settings = MIRAGE.new_settings './README.md'
-    await MIRAGE.acquire settings
-    delete settings.db
-    debug 'µ69688', settings
+    mirage = MIRAGE.new_settings './README.md'
+    await MIRAGE.acquire mirage
+    delete mirage.db
+    debug 'µ69688', mirage
     help 'ok'
 
 
