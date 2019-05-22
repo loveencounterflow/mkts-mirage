@@ -39,37 +39,16 @@ types                     = require '../types'
   relpath }               = require '../helpers'
 #...........................................................................................................
 require                   '../exception-handler'
-ICE                       = require 'icepick'
 MIRAGE                    = require '../..'
 do_validate               = true
 
-###
-
-TAINT consider to backport these flags to PipeDreams:
-
-* [ ] `$dirty`—whether any property of a datom has beem modified;
-* [ ] `$fresh`—whether a datom originated from within the stream, not from the source;
-* [X] `$stamped`—whether a datom has been processed.
-
-###
 
 #-----------------------------------------------------------------------------------------------------------
 @new_datom = ( P ... ) ->
-  R           = PD.new_datom P...
+  R           = PD.thaw PD.new_datom P...
   R.vnr_txt   = ( jr R.$vnr ) if ( not R.vnr_txt )? and ( R.$vnr? )
   R.$fresh    = true
-  return ICE.freeze R
-
-#-----------------------------------------------------------------------------------------------------------
-@stamp = ( d ) ->
-  ### NOTE we could use `icepick`'s 'copy-on-write'/structural sharing features here but that is probably
-  of little effect given how small our objects are; we therefore use the much simpler 'copy-on-thaw' and
-  re-freezing while enjoying the simplicity and clarity of intermittent (and contained) old-fashioned data
-  mutation. ###
-  R         = ICE.thaw d
-  R.$stamped = true
-  R.$dirty   = true
-  return ICE.freeze R
+  return PD.freeze R
 
 #-----------------------------------------------------------------------------------------------------------
 @new_vnr_level = ( S, vnr ) ->
@@ -95,7 +74,7 @@ TAINT consider to backport these flags to PipeDreams:
 @$split_words = ( S ) -> $ ( d, send ) =>
   return send d unless select d, '^mktscript'
   #.........................................................................................................
-  send @stamp d
+  send PD.stamp d
   text      = d.text
   prv_vnr   = d.$vnr
   nxt_vnr  = @new_vnr_level S, prv_vnr
@@ -111,22 +90,17 @@ TAINT consider to backport these flags to PipeDreams:
 #-----------------------------------------------------------------------------------------------------------
 @datom_from_row = ( S, row ) ->
   ### TAINT how to convert vnr in ICQL? ###
-  debug 'µ22299', row
   vnr_txt     = row.vnr_txt
   $vnr        = JSON.parse vnr_txt
-  R           = ICE.freeze PD.new_datom row.key, { text: row.value, $vnr, vnr_txt, }
+  R           = PD.freeze PD.new_datom row.key, { text: row.value, $vnr, vnr_txt, }
   R.$stamped  = true if row.stamped
-  debug 'µ22299', R
-  debug 'µ22299', PD.new_datom '^foo', 42
-  debug 'µ22299', PD.new_datom '^foo', { x: 42, }
-  debug 'µ22299', isa.object { x: 42, }
   return R
 
 #-----------------------------------------------------------------------------------------------------------
 @row_from_datom = ( S, d ) ->
   ### TAINT how to convert booleans in ICQL? ###
   stamped   = if d.$stamped then 1 else 0
-  R         = ICE.freeze { key: d.key, vnr_txt: d.vnr_txt, value: d.text, stamped, }
+  R         = PD.freeze { key: d.key, vnr_txt: d.vnr_txt, value: d.text, stamped, }
   validate.mirage_main_row R if do_validate
   return R
 
@@ -177,7 +151,8 @@ TAINT consider to backport these flags to PipeDreams:
   return $watch { last, }, ( d ) =>
     return null unless d is last
     #.......................................................................................................
-    for row from dbr.read_lines()
+    for row from dbr.read_lines { limit: 10, }
+      # debug 'µ10001', rpr row
       color = if row.stamped then CND.grey else CND.green
       key   = row.key.padEnd      12
       vnr   = row.vnr_txt.padEnd  12
@@ -198,9 +173,9 @@ TAINT consider to backport these flags to PipeDreams:
   #.........................................................................................................
   pipeline  = []
   pipeline.push source
-  pipeline.push PD.$show()
   pipeline.push @$split_words S
   pipeline.push @$feed_db     S
+  # pipeline.push PD.$show()
   # pipeline.push @_$show()
   pipeline.push @_$on_finish  S
   pipeline.push PD.$drain => resolve()
@@ -215,7 +190,7 @@ unless module.parent?
   testing = true
   do =>
     #.......................................................................................................
-    mirage = MIRAGE.new_settings '../README.md'
+    mirage = MIRAGE.new_settings './README.md'
     await MIRAGE.acquire      mirage
     await @translate_document mirage
     help 'ok'
