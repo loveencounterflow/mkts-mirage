@@ -98,14 +98,12 @@ as_sql = ( x ) ->
 @compile_sql = ( settings ) -> new Promise ( resolve, reject ) =>
   validate.object settings
   S = settings
-  help "reading #{rpr S.rel_source_path}"
+  # help "µ12311-1 reading #{rpr S.file_path}"
   #.........................................................................................................
   pipeline = []
-  pipeline.push PD.read_from_file S.source_path
+  pipeline.push PD.read_from_file S.file_path
   pipeline.push PD.$split()
-  pipeline.push @$tee_compile_sql S, ( error, sql ) =>
-    help "wrote output to #{rpr S.target_path_sql}"
-    resolve sql
+  pipeline.push @$tee_compile_sql S, ( error, sql ) => resolve sql
   pipeline.push PD.$drain()
   PD.pull pipeline...
   #.........................................................................................................
@@ -124,9 +122,7 @@ _$count = ( step ) ->
 @populate_db = ( me, sql ) -> new Promise ( resolve, reject ) =>
   validate.object me
   me.db.$.execute sql
-  line_count = me.db.$.first_value me.db.count_lines()
-  info "MKTS document #{rpr me.rel_source_path} has #{line_count} lines"
-  resolve()
+  resolve { line_count: me.db.$.first_value me.db.count_lines(), }
 
 #-----------------------------------------------------------------------------------------------------------
 @cleanup = ( settings ) -> new Promise ( resolve, reject ) =>
@@ -134,20 +130,17 @@ _$count = ( step ) ->
   resolve()
 
 #-----------------------------------------------------------------------------------------------------------
-@new_mirage = ( settings ) ->
-  validate.true ( isa_text = isa.text settings ) or ( isa.object settings )
-  settings                = { source_path: settings, } if isa_text
-  R                       = {}
-  R.db                    = ( require './db' ).new_db { clear: false, }
-  R.source_path           = settings.source_path
-  R.rel_source_path       = relpath R.source_path
-  return R
-
-#-----------------------------------------------------------------------------------------------------------
-@acquire = ( me ) -> new Promise ( resolve, reject ) =>
-  sql = await @compile_sql me
-  await @populate_db me, sql
-  resolve()
+@create = ( settings ) -> new Promise ( resolve, reject ) =>
+  validate.mirage_create_settings settings
+  me                      = {}
+  me.db                   = ( require './db' ).new_db settings
+  me.dbr                  = me.db
+  me.dbw                  = ( require './db' ).new_db settings
+  me.file_path            = cwd_abspath settings.file_path
+  me.rel_file_path        = cwd_relpath me.file_path
+  sql                     = await @compile_sql me
+  { line_count, }         = await @populate_db me, sql
+  resolve me
 
 
 ############################################################################################################
@@ -155,10 +148,13 @@ unless module.parent?
   MIRAGE  = @
   do ->
     #.......................................................................................................
-    mirage = MIRAGE.new_mirage './README.md'
-    await MIRAGE.acquire mirage
-    delete mirage.db
-    debug 'µ69688', mirage
+    settings =
+      file_path:  './README.md'
+      db_path:    '/tmp/mirage.db'
+      icql_path:  './db/mkts.icql'
+    mirage = await MIRAGE.create settings
+    # delete mirage.db
+    # debug 'µ69688', mirage
     help 'ok'
 
 
