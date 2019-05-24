@@ -22,19 +22,19 @@ PD                        = require 'pipedreams'
   select }                = PD
 { assign
   jr }                    = CND
-@_drop_extension          = ( path ) -> path[ ... path.length - ( PATH.extname path ).length ]
-types                     = require './types'
+{ cwd_abspath
+  cwd_relpath
+  here_abspath
+  _drop_extension
+  project_abspath }       = require './helpers'
+@types                    = require './types'
 #...........................................................................................................
 { isa
   validate
   declare
   size_of
   last_of
-  type_of }               = types
-#...........................................................................................................
-{ assign
-  abspath
-  relpath }               = require './helpers'
+  type_of }               = @types
 #...........................................................................................................
 require                   './exception-handler'
 
