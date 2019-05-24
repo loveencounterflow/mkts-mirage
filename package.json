@@ -5,8 +5,8 @@
   "main": "lib/main.js",
   "dependencies": {
     "better-sqlite3": "^5.4.0",
-    "cnd": "^4.5.0",
-    "icql": "^2.0.1",
+    "cnd": "^4.6.0",
+    "icql": "^2.1.0",
     "intertype": "^2.4.0",
     "mkdirp": "^0.5.1",
     "pipedreams": "^8.1.2"
