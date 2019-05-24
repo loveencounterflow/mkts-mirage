@@ -34,8 +34,7 @@ types                     = require '../types'
   size_of
   type_of }               = types
 #...........................................................................................................
-{ assign
-  abspath
+{ abspath
   relpath }               = require '../helpers'
 #...........................................................................................................
 require                   '../exception-handler'
@@ -119,15 +118,14 @@ do_validate               = true
 
 #-----------------------------------------------------------------------------------------------------------
 @$feed_db = ( S ) ->
-  ### TAINT stopgap measure; should be implemented in ICQL ###
-  db2 = ( MIRAGE.new_mirage S.mirage ).db
+  dbw = S.mirage.dbw
   return $watch ( d ) =>
     ### TAINT how to convert vnr in ICQL? ###
     row = @row_from_datom S, d
     try
       ### TAINT consider to use upsert instead https://www.sqlite.org/lang_UPSERT.html ###
-      if      d.$fresh then db2.insert row
-      else if d.$dirty then db2.update row
+      if      d.$fresh then dbw.insert row
+      else if d.$dirty then dbw.update row
     catch error
       warn "µ12133 when trying to insert or update row #{jr row}"
       warn "µ12133 an error occurred:"
@@ -190,9 +188,13 @@ unless module.parent?
   testing = true
   do =>
     #.......................................................................................................
-    mirage = MIRAGE.new_mirage './README.md'
-    await MIRAGE.acquire      mirage
+    settings =
+      file_path:  './README.md'
+      db_path:    '/tmp/mirage.db'
+      # icql_path:  './db/mkts.icql'
+    mirage = await MIRAGE.create settings
     await @translate_document mirage
     help 'ok'
+
 
 
