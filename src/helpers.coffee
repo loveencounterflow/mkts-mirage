@@ -18,16 +18,25 @@ urge                      = CND.get_logger 'urge',      badge
 whisper                   = CND.get_logger 'whisper',   badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
-PATH 											= require 'path'
-#...........................................................................................................
-@assign                   = Object.assign
-@abspath                  = ( P... ) -> PATH.resolve PATH.join __dirname, '..', P...
-@relpath 									= ( P... ) -> PATH.relative process.cwd(), PATH.join P...
+@cwd_abspath              = CND.cwd_abspath
+@cwd_relpath              = CND.cwd_relpath
+@here_abspath             = CND.here_abspath
+@_drop_extension          = ( path ) -> path[ ... path.length - ( PATH.extname path ).length ]
+@project_abspath          = ( P... ) -> @here_abspath __dirname, '..', P...
 
-#-----------------------------------------------------------------------------------------------------------
-@ensure_directory = ( path ) -> new Promise ( resolve, reject ) =>
-  ( require 'mkdirp' ) path, ( error ) =>
-    throw error if error?
-    resolve()
+# PATH                      = require 'path'
+# #...........................................................................................................
+# @assign                   = Object.assign
+
+
+# info @here_abspath  '/foo/bar', '/baz/coo'
+# info @cwd_abspath   '/foo/bar', '/baz/coo'
+# info @here_abspath  '/baz/coo'
+# info @cwd_abspath   '/baz/coo'
+# info @here_abspath  '/foo/bar', 'baz/coo'
+# info @cwd_abspath   '/foo/bar', 'baz/coo'
+# info @here_abspath  'baz/coo'
+# info @cwd_abspath   'baz/coo'
+# info @here_abspath  __dirname, 'baz/coo', 'x.js'
 
 
