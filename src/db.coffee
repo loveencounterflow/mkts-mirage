@@ -22,6 +22,11 @@ PD                        = require 'pipedreams'
   select }                = PD
 { assign
   jr }                    = CND
+{ cwd_abspath
+  cwd_relpath
+  here_abspath
+  _drop_extension
+  project_abspath }       = require './helpers'
 #...........................................................................................................
 join_path                 = ( P... ) -> PATH.resolve PATH.join P...
 boolean_as_int            = ( x ) -> if x then 1 else 0
@@ -30,31 +35,35 @@ xrpr                      = ( x ) -> inspect x, { colors: yes, breakLength: Infi
 xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 80,       maxArrayLength: Infinity, depth: Infinity, }
 #...........................................................................................................
 ICQL                      = require 'icql'
-# INTERTYPE                 = require './types'
-{ assign
-  abspath }               = require './helpers'
+project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
+
 
 #-----------------------------------------------------------------------------------------------------------
-@get_icql_settings = ( db_path = null ) ->
+@_get_icql_settings = ( settings ) ->
   ### TAINT path within node_modules might differ ###
   ### TAINT extensions should conceivably be configured in `*.icql` file or similar ###
   # R.db_path   = join_path __dirname, '../../db/data.db'
-  R                 = {}
-  R.connector       = require 'better-sqlite3'
-  R.db_path         = db_path ? abspath './db/mkts.db'
-  R.icql_path       = abspath './db/mkts.icql'
+  defaults          =
+    connector:        require 'better-sqlite3' ### TAINT stopgap, will be moved into ICQL ###
+    db_path:          project_abspath './db/mkts.db'
+    icql_path:        project_abspath './db/mkts.icql'
+    clear:            false
+  R                 = assign {}, defaults, settings
+  R.db_path         = cwd_abspath R.db_path
+  R.icql_path       = cwd_abspath R.icql_path
   return R
 
 #-----------------------------------------------------------------------------------------------------------
 @new_db = ( settings ) ->
-  db                    = ICQL.bind @get_icql_settings ( settings?.db_path ? null )
-  clear_db              = settings?.clear ? false
+  settings              = @_get_icql_settings settings
+  db                    = ICQL.bind settings
   @load_extensions      db
   @set_pragmas          db
   #.........................................................................................................
-  if clear_db
+  ### TAINT consider to move clearing DB to ICQL ###
+  if settings.clear
     clear_count = db.$.clear()
-    info "deleted #{clear_count} objects"
+    # info "µ33211 deleted #{clear_count} objects"
   #.........................................................................................................
   @create_db_functions  db
   #.........................................................................................................
@@ -70,18 +79,17 @@ ICQL                      = require 'icql'
 
 #-----------------------------------------------------------------------------------------------------------
 @load_extensions = ( db ) ->
-  warn "skipping sqlite extensions"
   return null
-  extensions_path = abspath './sqlite-for-mingkwai-ime/extensions'
-  debug 'µ39982', "extensions_path", extensions_path
-  db.$.load join_path extensions_path, 'spellfix.so'
-  db.$.load join_path extensions_path, 'csv.so'
-  db.$.load join_path extensions_path, 'regexp.so'
-  db.$.load join_path extensions_path, 'series.so'
-  db.$.load join_path extensions_path, 'nextchar.so'
-  # db.$.load join_path extensions_path, 'stmt.so'
-  #.........................................................................................................
-  return null
+  # extensions_path = project_abspath './sqlite-for-mingkwai-ime/extensions'
+  # debug 'µ39982', "extensions_path", extensions_path
+  # db.$.load join_path extensions_path, 'spellfix.so'
+  # db.$.load join_path extensions_path, 'csv.so'
+  # db.$.load join_path extensions_path, 'regexp.so'
+  # db.$.load join_path extensions_path, 'series.so'
+  # db.$.load join_path extensions_path, 'nextchar.so'
+  # # db.$.load join_path extensions_path, 'stmt.so'
+  # #.........................................................................................................
+  # return null
 
 #-----------------------------------------------------------------------------------------------------------
 @create_db_functions = ( db ) ->
