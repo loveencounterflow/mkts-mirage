@@ -58,12 +58,13 @@ as_sql = ( x ) ->
     if line is first
       send "drop table if exists main;"
       send "create table main ( "
-      send "    vnr_txt   json,"
-      # send "    vnr_txt  json unique,"
+      # send "    vnr_txt   json,"
+      send "    vnr_txt   json unique,"
       send "    stamped   boolean default false,"
       send "    key       text default '^mktscript',"
-      send "    value     text );"
-      send "insert into main ( vnr_txt, value ) values"
+      send "    text      text,"
+      send "    p         json default 'null' );"
+      send "insert into main ( vnr_txt, text ) values"
     #.......................................................................................................
     else if line is last
       send ";"
