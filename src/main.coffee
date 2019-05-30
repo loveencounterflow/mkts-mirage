@@ -47,7 +47,7 @@ as_sql = ( x ) ->
   return "'#{R}'"
 
 #-----------------------------------------------------------------------------------------------------------
-@$as_sql = =>
+@$as_sql = ( S ) =>
   first           = Symbol 'first'
   last            = Symbol 'last'
   is_first_record = true
@@ -61,7 +61,7 @@ as_sql = ( x ) ->
       # send "    vnr_txt   json,"
       send "    vnr_txt   json unique,"
       send "    stamped   boolean default false,"
-      send "    key       text default '^mktscript',"
+      send "    key       text default #{as_sql S.default_key},"
       send "    text      text,"
       send "    p         json default 'null' );"
       send "insert into main ( vnr_txt, text ) values"
@@ -86,10 +86,10 @@ as_sql = ( x ) ->
   return ( require 'pull-tee' ) bystream
 
 #-----------------------------------------------------------------------------------------------------------
-@$tee_compile_sql = ( target_path_sql, handler ) =>
+@$tee_compile_sql = ( S, handler ) =>
   collector = []
   pipeline  = []
-  pipeline.push @$as_sql()
+  pipeline.push @$as_sql S
   # pipeline.push @$as_line()
   pipeline.push PD.$collect { collector, }
   pipeline.push PD.$drain -> handler null, collector.join '\n'
@@ -139,6 +139,7 @@ _$count = ( step ) ->
   me.dbw                  = ( require './db' ).new_db settings
   me.file_path            = cwd_abspath settings.file_path
   me.rel_file_path        = cwd_relpath me.file_path
+  me.default_key          = settings.default_key ? '^line'
   sql                     = await @compile_sql me
   { line_count, }         = await @populate_db me, sql
   resolve me

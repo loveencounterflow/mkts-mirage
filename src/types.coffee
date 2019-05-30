@@ -19,8 +19,9 @@ intertype                 = new ( require 'intertype' ).Intertype module.exports
     # "x has key 'db_path'":                    ( x ) -> @has_key             x, 'db_path'
     # "x has key 'icql_path'":                  ( x ) -> @has_key             x, 'icql_path'
     "x.file_path is a nonempty text":         ( x ) -> @isa.nonempty_text x.file_path
-    "x.db_path is a ?nonempty text":          ( x ) -> ( not x.db_path?   ) or @isa.nonempty_text x.db_path
-    "x.icql_path is a ?nonempty text":        ( x ) -> ( not x.icql_path? ) or @isa.nonempty_text x.icql_path
+    "x.db_path is a ?nonempty text":          ( x ) -> ( not x.db_path?     ) or @isa.nonempty_text x.db_path
+    "x.icql_path is a ?nonempty text":        ( x ) -> ( not x.icql_path?   ) or @isa.nonempty_text x.icql_path
+    "x.default_key is a ?nonempty text":      ( x ) -> ( not x.default_key? ) or @isa.nonempty_text x.default_key
 
 #-----------------------------------------------------------------------------------------------------------
 @declare 'mirage_main_row',
