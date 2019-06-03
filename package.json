@@ -9,7 +9,7 @@
     "icql": "^2.1.0",
     "intertype": "^2.4.0",
     "mkdirp": "^0.5.1",
-    "pipedreams": "^8.1.2"
+    "pipedreams": "^8.2.0"
   },
   "devDependencies": {},
   "scripts": {
