@@ -48,14 +48,14 @@ as_sql = ( x ) ->
 
 #-----------------------------------------------------------------------------------------------------------
 @$as_sql = ( S ) =>
-  first           = Symbol 'first'
-  last            = Symbol 'last'
-  is_first_record = true
-  lnr             = 0
-  return $ { first, last, }, ( line, send ) =>
+  lnr = 0
+  return $ ( d, send ) =>
+    validate.text ( line = d.value )
+    is_first  = ( d.$first ? false )
+    is_last   = ( d.$last  ? false )
     #.......................................................................................................
     ### TAINT consider to store SQL as `fragment`s in `mkts.icql` ###
-    if line is first
+    if is_first
       send "drop table if exists main;"
       send "create table main ( "
       # send "    vnr_txt   json,"
@@ -65,16 +65,14 @@ as_sql = ( x ) ->
       send "    text      text,"
       send "    p         json default 'null' );"
       send "insert into main ( vnr_txt, text ) values"
-    #.......................................................................................................
-    else if line is last
-      send ";"
       # send "create unique index idx_main_lnr on main ( lnr );"
     #.......................................................................................................
-    else
-      lnr  += +1
-      comma = if is_first_record then '' else ','
-      is_first_record = false
-      send """#{comma}( '[#{lnr}]', #{as_sql line} )"""
+    lnr  += +1
+    comma = if is_last then '' else ','
+    send """( '[#{lnr}]', #{as_sql line} )#{comma}"""
+    #.......................................................................................................
+    if is_last
+      send ";"
   #.........................................................................................................
   return null
 
@@ -89,6 +87,7 @@ as_sql = ( x ) ->
 @$tee_compile_sql = ( S, handler ) =>
   collector = []
   pipeline  = []
+  pipeline.push PD.$add_position()
   pipeline.push @$as_sql S
   # pipeline.push @$as_line()
   pipeline.push PD.$collect { collector, }
@@ -151,7 +150,8 @@ unless module.parent?
   do ->
     #.......................................................................................................
     settings =
-      file_path:  './README.md'
+      # file_path:  './README.md'
+      file_path:  '/usr/share/dict/italian'
       db_path:    '/tmp/mirage.db'
       icql_path:  './db/mkts.icql'
     mirage = await MIRAGE.create settings
