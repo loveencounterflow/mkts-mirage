@@ -40,39 +40,25 @@ require                   './exception-handler'
 
 
 #-----------------------------------------------------------------------------------------------------------
-as_sql = ( x ) ->
-  validate.text x
-  R = x
-  R = R.replace /'/g, "''"
-  return "'#{R}'"
-
-#-----------------------------------------------------------------------------------------------------------
 @$as_sql = ( S ) =>
   lnr = 0
   return $ ( d, send ) =>
-    validate.text ( line = d.value )
-    is_first  = ( d.$first ? false )
-    is_last   = ( d.$last  ? false )
+    validate.text ( text = d.value )
+    is_first        = ( d.$first ? false )
+    is_last         = ( d.$last  ? false )
+    default_region  = S.default_region
+    default_key     = S.default_key
     #.......................................................................................................
-    ### TAINT consider to store SQL as `fragment`s in `mkts.icql` ###
     if is_first
-      send "drop table if exists main;"
-      send "create table main ( "
-      # send "    vnr_txt   json,"
-      send "    vnr_txt   json unique,"
-      send "    stamped   boolean default false,"
-      send "    key       text default #{as_sql S.default_key},"
-      send "    text      text,"
-      send "    p         json default 'null' );"
-      send "insert into main ( vnr_txt, text ) values"
-      # send "create unique index idx_main_lnr on main ( lnr );"
+      send S.db.create_table_main_first {  default_region, default_key, }
     #.......................................................................................................
     lnr  += +1
+    vnr   = [ lnr, ]
     comma = if is_last then '' else ','
-    send """( '[#{lnr}]', #{as_sql line} )#{comma}"""
+    send ( S.db.create_table_main_middle { vnr, text, } ) + comma
     #.......................................................................................................
     if is_last
-      send ";"
+      send ';'
   #.........................................................................................................
   return null
 
@@ -91,6 +77,7 @@ as_sql = ( x ) ->
   pipeline.push @$as_sql S
   # pipeline.push @$as_line()
   pipeline.push PD.$collect { collector, }
+  # pipeline.push PD.$watch ( collector ) -> debug 'µ52821', collector.join '\n'
   pipeline.push PD.$drain -> handler null, collector.join '\n'
   return PD.$tee PD.pull pipeline...
 
@@ -138,7 +125,8 @@ _$count = ( step ) ->
   me.dbw                  = ( require './db' ).new_db settings
   me.file_path            = cwd_abspath settings.file_path
   me.rel_file_path        = cwd_relpath me.file_path
-  me.default_key          = settings.default_key ? '^line'
+  me.default_region       = settings.default_region ? 'body'
+  me.default_key          = settings.default_key    ? '^line'
   sql                     = await @compile_sql me
   { line_count, }         = await @populate_db me, sql
   resolve me
@@ -151,8 +139,9 @@ unless module.parent?
     #.......................................................................................................
     settings =
       # file_path:  './README.md'
-      file_path:  '/usr/share/dict/italian'
-      db_path:    '/tmp/mirage.db'
+      # file_path:  '/usr/share/dict/italian'
+      file_path:  './db/demo.txt'
+      db_path:    './db/mkts.db'
       icql_path:  './db/mkts.icql'
     mirage = await MIRAGE.create settings
     # delete mirage.db

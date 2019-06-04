@@ -1,20 +1,17 @@
 
--- -- ---------------------------------------------------------------------------------------------------------
--- fragment create_table_main_first():
---   drop table if exists main;
---   create table main (
---       vnr_txt      json unique primary key,
---       stamped   boolean default false,
---       line      text );
---   insert into main ( vnr_txt, line ) values
-
--- -- ---------------------------------------------------------------------------------------------------------
--- fragment create_table_main_first():
---   ;
-
--- -- ---------------------------------------------------------------------------------------------------------
--- fragment create_table_main_first( comma, vnr_txt, line ):
---   $comma ( $vnr_txt, $line )
+-- ---------------------------------------------------------------------------------------------------------
+fragment create_table_main_first( default_region, default_key ):
+  drop table if exists main;
+  create table main (
+    vnr_txt   json    unique,
+    stamped   boolean default false,
+    region    text    default $default_region,
+    key       text    default $default_key,
+    text      text,
+    p         json    default 'null' );
+  insert into main ( vnr_txt, text ) values
+fragment create_table_main_middle( vnr, text ):
+  ( $vnr, $text )
 
 -- ---------------------------------------------------------------------------------------------------------
 query read_lines( limit ):
