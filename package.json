@@ -6,7 +6,7 @@
   "dependencies": {
     "better-sqlite3": "^5.4.0",
     "cnd": "^4.6.0",
-    "icql": "^3.0.1",
+    "icql": "^3.0.2",
     "intertype": "^2.4.0",
     "mkdirp": "^0.5.1",
     "pipedreams": "^8.2.0"
