@@ -46,11 +46,11 @@ require                   './exception-handler'
     validate.text ( text = d.value )
     is_first        = ( d.$first ? false )
     is_last         = ( d.$last  ? false )
-    default_region  = S.default_region
+    default_dest    = S.default_dest
     default_key     = S.default_key
     #.......................................................................................................
     if is_first
-      send S.db.create_table_main_first {  default_region, default_key, }
+      send S.db.create_table_main_first { default_dest, default_key, }
     #.......................................................................................................
     lnr  += +1
     vnr   = [ lnr, ]
@@ -125,7 +125,7 @@ _$count = ( step ) ->
   me.dbw                  = ( require './db' ).new_db settings
   me.file_path            = cwd_abspath settings.file_path
   me.rel_file_path        = cwd_relpath me.file_path
-  me.default_region       = settings.default_region ? 'body'
+  me.default_dest         = settings.default_dest   ? 'main'
   me.default_key          = settings.default_key    ? '^line'
   sql                     = await @compile_sql me
   { line_count, }         = await @populate_db me, sql
