@@ -146,6 +146,8 @@ unless module.parent?
     mirage = await MIRAGE.create settings
     # delete mirage.db
     # debug 'µ69688', mirage
+    for row from mirage.db.read_lines()
+      info row
     help 'ok'
 
 

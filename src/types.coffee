@@ -28,15 +28,15 @@ intertype                 = new ( require 'intertype' ).Intertype module.exports
   tests:
     "x is a object":                          ( x ) -> @isa.object          x
     "x has key 'key'":                        ( x ) -> @has_key             x, 'key'
-    "x has key 'vnr_txt'":                    ( x ) -> @has_key             x, 'vnr_txt'
+    "x has key 'vnr'":                        ( x ) -> @has_key             x, 'vnr'
     "x has key 'value'":                      ( x ) -> @has_key             x, 'value'
     "x.key is a nonempty text":               ( x ) -> @isa.nonempty_text   x.key
-    "x.vnr_txt is a nonempty text":           ( x ) -> @isa.nonempty_text   x.vnr_txt
-    "x.vnr_txt starts, ends with '[]'":       ( x ) -> ( x.vnr_txt.match /^\[.*\]$/ )?
-    "x.vnr_txt is a JSON array of integers":  ( x ) ->
-      lst = JSON.parse x.vnr_txt
+    "x.vnr is a nonempty text":               ( x ) -> @isa.nonempty_text   x.vnr
+    "x.vnr starts, ends with '[]'":           ( x ) -> ( x.vnr.match /^\[.*\]$/ )?
+    "x.vnr is a JSON array of integers":      ( x ) ->
+      lst = JSON.parse x.vnr
       return false unless @isa.list lst
-      return lst.every ( xx ) => @isa.positive_integer xx
+      return lst.every ( xx ) => @isa.integer xx
 
 # #-----------------------------------------------------------------------------------------------------------
 # @declare 'true', ( x ) -> x is true

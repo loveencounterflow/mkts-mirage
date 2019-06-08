@@ -5,7 +5,7 @@
 ############################################################################################################
 CND                       = require 'cnd'
 rpr                       = CND.rpr
-badge                     = 'MKTS-MIRAGE/EXPERIMENTS/VECTOR-INDEX'
+badge                     = 'MKTS-MIRAGE/EXPERIMENTS/VNR2'
 debug                     = CND.get_logger 'debug',     badge
 warn                      = CND.get_logger 'warn',      badge
 info                      = CND.get_logger 'info',      badge
@@ -40,33 +40,29 @@ MIRAGE                    = require '../..'
 
 
 #-----------------------------------------------------------------------------------------------------------
-@populate_db = ( settings ) ->
-  validate.object settings
-  S = settings
-  # D = S.db.$.db
-  # ( D.prepare "drop table if exists xxx;"               ).run()
-  # ( D.prepare "create table xxx( d blob );"             ).run()
-  # ( D.prepare "insert into xxx values ( ? );"           ).run [ ( Buffer.from '123' ), ]
-  # debug 'µ433344', [ ( D.prepare "select * from xxx;"   ).iterate()..., ]
-  S.db.vidx_create_and_populate_tables()
-  names = [
-    'vidx_list_unordered'
-    'vidx_list_ordered_with_cached'
-    'vidx_list_ordered_with_call' ]
-  for name in names
-    urge name
-    for row from S.db[ name ]()
-      info row.vidx
+@main = ( Typedarray ) ->
+  urge Typedarray
+  vnrs_plain = [
+    [ 10, ]
+    [ 10, 1 ]
+    [ 10, 1, 0 ]
+    [ 10, -1, 0 ]
+    [ 10, -1, -1 ]
+    [ 10, -1, 1 ]
+    [ 10, 2 ]
+    [ 10, 0 ]
+    [ 10, -1 ]
+    ]
+  vnrs_enc = []
+  for vnr_plain in vnrs_plain
+    vnrs_enc.push Typedarray.from vnr_plain
+  debug 'µ00922', vnrs_plain.sort()
+  debug 'µ00922', vnrs_enc.sort()
 
 
 ############################################################################################################
 unless module.parent?
-  testing = true
-  do =>
-    #.......................................................................................................
-    settings = MIRAGE.new_settings '../README.md'
-    await MIRAGE.write_sql_cache      settings
-    await @populate_db                settings
-    help 'ok'
+  @main Uint32Array
+  @main Int32Array
 
 

@@ -36,6 +36,15 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 80, 
 #...........................................................................................................
 ICQL                      = require 'icql'
 project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
+#...........................................................................................................
+types                     = require './types'
+{ isa
+  validate
+  cast
+  declare
+  size_of
+  last_of
+  type_of }               = types
 
 
 #-----------------------------------------------------------------------------------------------------------
@@ -44,7 +53,6 @@ project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
   ### TAINT extensions should conceivably be configured in `*.icql` file or similar ###
   # R.db_path   = join_path __dirname, '../../db/data.db'
   defaults          =
-    connector:        require 'better-sqlite3' ### TAINT stopgap, will be moved into ICQL ###
     db_path:          project_abspath './db/mkts.db'
     icql_path:        project_abspath './db/mkts.icql'
     clear:            false
@@ -65,7 +73,8 @@ project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
     clear_count = db.$.clear()
     # info "µ33211 deleted #{clear_count} objects"
   #.........................................................................................................
-  @create_db_functions  db
+  @create_udfs  db
+  @create_api   db
   #.........................................................................................................
   return db
 
@@ -92,11 +101,7 @@ project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
   # return null
 
 #-----------------------------------------------------------------------------------------------------------
-@create_db_functions = ( db ) ->
-  # db.$.function 'add_spellfix_confusable', ( a, b ) ->
-  # db.$.function 'spellfix1_phonehash', ( x ) ->
-  #   debug '23363', x
-  #   return x.toUpperCase()
+@create_udfs = ( db ) ->
 
   #---------------------------------------------------------------------------------------------------------
   db.$.function 'echo', { deterministic: false, varargs: true }, ( P... ) ->
@@ -118,46 +123,29 @@ project_abspath           = ( P... ) -> here_abspath __dirname, '..', P...
     return x
 
   #---------------------------------------------------------------------------------------------------------
-  db.$.function 'contains_word', { deterministic: true, varargs: false }, ( text, probe ) ->
-    return if ( ( ' ' + text + ' ' ).indexOf ' ' + probe + ' ' ) > -1 then 1 else 0
-
-  #---------------------------------------------------------------------------------------------------------
-  db.$.function 'get_words', { deterministic: true, varargs: false }, ( text ) ->
-    ### Given a text, return a JSON array with words (whitespace-separated non-empty substrings). ###
-    JSON.stringify ( word for word in text.split /\s+/ when word isnt '' )
-
-  # #---------------------------------------------------------------------------------------------------------
-  # db.$.function 'vnr_encode_textual', { deterministic: true, varargs: false }, ( vnr ) ->
-  #   ( ( "#{idx}".padStart 6, '0' ) for idx in ( JSON.parse vnr ) ).join '-'
-
-  #---------------------------------------------------------------------------------------------------------
-  db.$.function 'vnr_encode', { deterministic: true, varargs: false }, ( vnr ) ->
-    try
-      Uint32Array.from JSON.parse vnr
-    catch error
-      warn "µ33211 when trying to convert #{xrpr2 vnr}"
-      warn "µ33211 to a typed array, an error occurred:"
-      warn "µ33211 #{error.message}"
-      throw error
-
-  # #---------------------------------------------------------------------------------------------------------
-  # db.$.function 'get_nth_word', { deterministic: true, varargs: false }, ( text, nr ) ->
-  #   ### NB SQLite has no string aggregation, no string splitting, and in general does not implement
-  #   table-returning user-defined functions (except in C, see the `prefixes` extension). Also, you can't
-  #   modify tables from within a UDF because the connection is of course busy executing the UDF.
-  #   As a consequence, it is well-nigh impossible to split strings to rows in a decent manner. You could
-  #   probably write a 12-liner with a recursive CTE each time you want to split a string. Unnecessary to
-  #   mention that SQLite does not support putting *that* thing into a UDF (because those can't return
-  #   anything except a single atomic value).
-
-  #   **Update** Turns out the `json1` extension can help out; see the `get_words()` UDF. ###
-  #   ### TAINT to be deprecated in favor of `get_words()` ###
-  #   parts = text.split /\s+/
-  #   return parts[ nr - 1 ] ? null
+  db.$.function 'json_as_hollerith', { deterministic: false, varargs: false }, ( x ) ->
+    debug 'µ43445', rpr JSON.parse x
+    debug 'µ43445', rpr type_of JSON.parse x
+    debug 'µ43445', rpr db.$.as_hollerith [ 'helo', ]
+    debug 'µ43445', rpr db.$.as_hollerith JSON.parse x
+    return db.$.as_hollerith JSON.parse x
 
   #---------------------------------------------------------------------------------------------------------
   return null
 
+#-----------------------------------------------------------------------------------------------------------
+@create_api = ( db ) ->
+  db.cast_row = ( row ) ->
+    validate.mirage_main_row row
+    R           = assign {}, row
+    R.vnr_blob  = db.$.as_hollerith R.vnr
+    R.vnr       = jr R.vnr
+    R.stamped   = cast.boolean 'number', R.stamped
+    return R
+  #.........................................................................................................
+  db.insert = ( row ) -> db._insert db.cast_row row
+  db.update = ( row ) -> db._insert db.cast_row row
+  return null
 
 
 
