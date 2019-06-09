@@ -124,10 +124,6 @@ types                     = require './types'
 
   #---------------------------------------------------------------------------------------------------------
   db.$.function 'json_as_hollerith', { deterministic: false, varargs: false }, ( x ) ->
-    debug 'µ43445', rpr JSON.parse x
-    debug 'µ43445', rpr type_of JSON.parse x
-    debug 'µ43445', rpr db.$.as_hollerith [ 'helo', ]
-    debug 'µ43445', rpr db.$.as_hollerith JSON.parse x
     return db.$.as_hollerith JSON.parse x
 
   #---------------------------------------------------------------------------------------------------------

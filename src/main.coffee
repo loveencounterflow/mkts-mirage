@@ -147,7 +147,8 @@ unless module.parent?
     # delete mirage.db
     # debug 'µ69688', mirage
     for row from mirage.db.read_lines()
-      info row
+      delete row.vnr_blob
+      info 'µ33211', jr row
     help 'ok'
 
 
