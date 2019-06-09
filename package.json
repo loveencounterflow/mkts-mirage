@@ -1,6 +1,6 @@
 {
   "name": "mkts-mirage",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "description": "Utility for MingKwai TypeSetter to mirror text files into a SQLite DB.",
   "main": "lib/main.js",
   "dependencies": {
