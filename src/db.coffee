@@ -140,7 +140,7 @@ types                     = require './types'
     return R
   #.........................................................................................................
   db.insert = ( row ) -> db._insert db.cast_row row
-  db.update = ( row ) -> db._insert db.cast_row row
+  db.update = ( row ) -> db._update db.cast_row row
   return null
 
 
