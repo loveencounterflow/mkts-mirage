@@ -1,29 +1,37 @@
 
 -- ---------------------------------------------------------------------------------------------------------
-fragment create_table_main_first( default_dest, default_key, default_realm ):
+fragment create_table_main_first( path, default_dest, default_key, default_realm ):
   pragma foreign_keys = off;
   drop table if exists main;
   drop table if exists keys;
   drop table if exists realms;
+  drop table if exists sources;
   pragma foreign_keys = on;
+  -- .......................................................................................................
+  create table sources (
+    id              integer not null unique primary key, /* alias for system rowid */
+    path            text    not null );
+  insert into sources ( id,  path )
+    values            (  1, $path );
   -- .......................................................................................................
   create table realms (
     realm           text    not null unique primary key );
-  insert into realms ( realm ) values
-    ( $default_realm );
+  insert into realms  (          realm )
+    values            ( $default_realm );
   -- .......................................................................................................
   create table keys (
     key             text    not null unique primary key,
     is_block        boolean not null default false,
     has_paragraphs  boolean not null default false
     check ( not ( ( not is_block ) and has_paragraphs ) ) );
-  insert into keys ( key, is_block ) values
-    ( $default_key, false );
+  insert into keys  (          key, is_block )
+    values          ( $default_key,    false );
   -- .......................................................................................................
   create table main (
     vnr       json    unique not null,
     stamped   boolean not null default false,
     dest      text    not null default $default_dest,
+    sid       integer not null default 1 references sources ( id ),
     realm     text    not null default $default_realm references realms ( realm ),
     ref       text    default 'mirage',
     key       text    not null default $default_key references keys ( key ),

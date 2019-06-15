@@ -49,9 +49,10 @@ require                   './exception-handler'
     default_dest    = S.default_dest
     default_key     = S.default_key
     default_realm   = S.default_realm
+    path            = S.file_path
     #.......................................................................................................
     if is_first
-      send S.db.create_table_main_first { default_dest, default_key, default_realm, }
+      send S.db.create_table_main_first { path, default_dest, default_key, default_realm, }
     #.......................................................................................................
     lnr  += +1
     vnr   = [ lnr, ]
