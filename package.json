@@ -5,10 +5,10 @@
   "main": "lib/main.js",
   "dependencies": {
     "cnd": "^4.6.0",
-    "icql": "^3.1.1",
+    "icql": "^3.2.0",
     "intertype": "^2.5.0",
     "mkdirp": "^0.5.1",
-    "pipedreams": "^8.2.0"
+    "pipedreams": "^8.8.0"
   },
   "devDependencies": {},
   "scripts": {
