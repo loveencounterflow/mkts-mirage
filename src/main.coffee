@@ -48,9 +48,10 @@ require                   './exception-handler'
     is_last         = ( d.$last  ? false )
     default_dest    = S.default_dest
     default_key     = S.default_key
+    default_realm   = S.default_realm
     #.......................................................................................................
     if is_first
-      send S.db.create_table_main_first { default_dest, default_key, }
+      send S.db.create_table_main_first { default_dest, default_key, default_realm, }
     #.......................................................................................................
     lnr  += +1
     vnr   = [ lnr, ]
@@ -127,6 +128,7 @@ _$count = ( step ) ->
   me.rel_file_path        = cwd_relpath me.file_path
   me.default_dest         = settings.default_dest   ? 'main'
   me.default_key          = settings.default_key    ? '^line'
+  me.default_realm        = settings.default_realm  ? 'input'
   sql                     = await @compile_sql me
   { line_count, }         = await @populate_db me, sql
   resolve me

@@ -1,15 +1,36 @@
 
 -- ---------------------------------------------------------------------------------------------------------
-fragment create_table_main_first( default_dest, default_key ):
+fragment create_table_main_first( default_dest, default_key, default_realm ):
+  pragma foreign_keys = off;
   drop table if exists main;
+  drop table if exists keys;
+  drop table if exists realms;
+  pragma foreign_keys = on;
+  -- .......................................................................................................
+  create table realms (
+    realm           text    not null unique primary key );
+  insert into realms ( realm ) values
+    ( $default_realm );
+  -- .......................................................................................................
+  create table keys (
+    key             text    not null unique primary key,
+    is_block        boolean not null default false,
+    has_paragraphs  boolean not null default false
+    check ( not ( ( not is_block ) and has_paragraphs ) ) );
+  insert into keys ( key, is_block ) values
+    ( $default_key, false );
+  -- .......................................................................................................
   create table main (
-    vnr       json    unique not null primary key,
-    vnr_blob  blob    unique not null,
+    vnr       json    unique not null,
     stamped   boolean not null default false,
     dest      text    not null default $default_dest,
-    key       text    not null default $default_key,
+    realm     text    not null default $default_realm references realms ( realm ),
+    ref       text    default 'mirage',
+    key       text    not null default $default_key references keys ( key ),
     text      text,
-    p         json    default 'null' );
+    p         json    default 'null',
+    vnr_blob  blob    unique not null,
+    primary key ( realm, vnr_blob ) );
   insert into main ( vnr, vnr_blob, text ) values
 fragment create_table_main_middle( vnr, text ):
   ( $vnr, json_as_hollerith( $vnr ), $text )
@@ -38,6 +59,16 @@ query read_unstamped_lines():
     order by vnr_blob;
 
 -- ---------------------------------------------------------------------------------------------------------
+query read_unstamped_lines( realm ):
+  select
+      *
+    from main
+    where true
+      and ( not stamped )
+      and ( realm is $realm )
+    order by vnr_blob;
+
+-- ---------------------------------------------------------------------------------------------------------
 query count_lines():
   select count(*) from main;
 
@@ -50,24 +81,24 @@ query get_stats():
     select null, null where false;
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure _insert( key, vnr, vnr_blob, dest, text, p, stamped ):
+procedure _insert( realm, key, vnr, vnr_blob, dest, text, p, stamped ):
   insert into
-    main    (  key,  vnr,  vnr_blob,  dest,  text,  p,  stamped )
-    values  ( $key, $vnr, $vnr_blob, $dest, $text, $p, $stamped );
+    main    (  realm,  key,  vnr,  vnr_blob,  dest,  text,  p,  stamped )
+    values  ( $realm, $key, $vnr, $vnr_blob, $dest, $text, $p, $stamped );
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure _update( key, vnr, vnr_blob, dest, text, p, stamped ):
+procedure _update( realm, key, vnr, vnr_blob, dest, text, p, stamped ):
   update main
-    set (  key,  vnr,  vnr_blob,  dest,   text,  p,  stamped ) =
-        ( $key, $vnr, $vnr_blob, $dest,  $text, $p, $stamped )
+    set (  realm,  key,  vnr,  vnr_blob,  dest,   text,  p,  stamped ) =
+        ( $realm, $key, $vnr, $vnr_blob, $dest,  $text, $p, $stamped )
     where vnr = $vnr;
 
--- ---------------------------------------------------------------------------------------------------------
-procedure _update( vnr ):
-  update main
-    set (  vnr,  vnr_blob ) =
-        ( $vnr, $vnr_blob )
-    where vnr = $vnr;
+-- -- ---------------------------------------------------------------------------------------------------------
+-- procedure _update( vnr ):
+--   update main
+--     set (  vnr,  vnr_blob ) =
+--         ( $vnr, $vnr_blob )
+--     where vnr = $vnr;
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure stamp_line( vnr ): update main set stamped = true where vnr = $vnr;
