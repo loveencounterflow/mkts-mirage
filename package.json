@@ -5,7 +5,7 @@
   "main": "lib/main.js",
   "dependencies": {
     "cnd": "^4.6.0",
-    "icql": "^3.2.0",
+    "icql": "^3.2.1",
     "intertype": "^2.5.0",
     "mkdirp": "^0.5.1",
     "pipedreams": "^8.9.1"
