@@ -15,10 +15,10 @@ intertype                 = new ( require 'intertype' ).Intertype module.exports
 @declare 'mirage_create_settings',
   tests:
     "x is a object":                          ( x ) -> @isa.object          x
-    "x has key 'file_path'":                  ( x ) -> @has_key             x, 'file_path'
-    # "x has key 'db_path'":                    ( x ) -> @has_key             x, 'db_path'
-    # "x has key 'icql_path'":                  ( x ) -> @has_key             x, 'icql_path'
-    "x.file_path is a nonempty text":         ( x ) -> @isa.nonempty_text x.file_path
+    "x.file_path is a ?nonempty text":        ( x ) -> ( not x.file_path?   ) or @isa.nonempty_text x.file_path
+    "x.text is a ?text":                      ( x ) -> ( not x.text?        ) or @isa.text          x.text
+    "x.file_path? xor x.text?":               ( x ) ->
+      ( ( x.text? ) or ( x.file_path? ) ) and not ( ( x.text? ) and ( x.file_path? ) )
     "x.db_path is a ?nonempty text":          ( x ) -> ( not x.db_path?     ) or @isa.nonempty_text x.db_path
     "x.icql_path is a ?nonempty text":        ( x ) -> ( not x.icql_path?   ) or @isa.nonempty_text x.icql_path
     "x.default_key is a ?nonempty text":      ( x ) -> ( not x.default_key? ) or @isa.nonempty_text x.default_key

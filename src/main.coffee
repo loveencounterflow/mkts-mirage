@@ -87,11 +87,13 @@ require                   './exception-handler'
 @compile_sql = ( settings ) -> new Promise ( resolve, reject ) =>
   validate.object settings
   S = settings
-  # help "µ12311-1 reading #{rpr S.file_path}"
   #.........................................................................................................
   pipeline = []
-  pipeline.push PD.read_from_file S.file_path
-  pipeline.push PD.$split()
+  if S.file_path?
+    pipeline.push PD.read_from_file S.file_path
+    pipeline.push PD.$split()
+  else
+    pipeline.push PD.new_value_source S.text.split '\n'
   pipeline.push @$tee_compile_sql S, ( error, sql ) => resolve sql
   pipeline.push PD.$drain()
   PD.pull pipeline...
@@ -125,8 +127,13 @@ _$count = ( step ) ->
   me.db                   = ( require './db' ).new_db settings
   me.dbr                  = me.db
   me.dbw                  = ( require './db' ).new_db settings
-  me.file_path            = cwd_abspath settings.file_path
-  me.rel_file_path        = cwd_relpath me.file_path
+  if me.file_path?
+    me.file_path            = cwd_abspath settings.file_path
+    me.rel_file_path        = cwd_relpath me.file_path
+  else
+    me.text                 = settings.text
+    me.file_path            = null
+    me.rel_file_path        = null
   me.default_dest         = settings.default_dest   ? 'main'
   me.default_key          = settings.default_key    ? '^line'
   me.default_realm        = settings.default_realm  ? 'input'
@@ -143,7 +150,11 @@ unless module.parent?
     settings =
       # file_path:  './README.md'
       # file_path:  '/usr/share/dict/italian'
-      file_path:  './db/demo.txt'
+      text:       """
+      helo world!
+      some literal text
+      """
+      # file_path:  './db/demo.txt'
       db_path:    './db/mkts.db'
       icql_path:  './db/mkts.icql'
     mirage = await MIRAGE.create settings
