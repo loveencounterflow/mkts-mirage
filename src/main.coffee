@@ -127,7 +127,8 @@ _$count = ( step ) ->
   me.db                   = ( require './db' ).new_db settings
   me.dbr                  = me.db
   me.dbw                  = ( require './db' ).new_db settings
-  if me.file_path?
+  if settings.file_path?
+    me.text                 = null
     me.file_path            = cwd_abspath settings.file_path
     me.rel_file_path        = cwd_relpath me.file_path
   else
