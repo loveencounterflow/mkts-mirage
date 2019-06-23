@@ -150,11 +150,11 @@ unless module.parent?
     settings =
       # file_path:  './README.md'
       # file_path:  '/usr/share/dict/italian'
-      text:       """
-      helo world!
-      some literal text
-      """
-      # file_path:  './db/demo.txt'
+      # text:       """
+      #   helo world!
+      #   some literal text
+      #   """
+      file_path:  './db/demo.txt'
       db_path:    './db/mkts.db'
       icql_path:  './db/mkts.icql'
     mirage = await MIRAGE.create settings
