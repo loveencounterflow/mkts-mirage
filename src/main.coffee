@@ -97,7 +97,7 @@ require                   './exception-handler'
   me.default_dest         = settings.default_dest   ? 'main'
   me.default_key          = settings.default_key    ? '^line'
   me.default_realm        = settings.default_realm  ? 'input'
-  sql                     = await MIRAGE.compile_sql me
+  sql                     = await @compile_sql me
   { line_count, }         = await @populate_db me, sql
   me.line_count           = line_count
   resolve me
