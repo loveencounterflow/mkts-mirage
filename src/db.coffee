@@ -16,10 +16,6 @@ echo                      = CND.echo.bind CND
 #...........................................................................................................
 PATH                      = require 'path'
 # FS                        = require 'fs'
-PD                        = require 'pipedreams'
-{ $
-  $async
-  select }                = PD
 { assign
   jr }                    = CND
 { cwd_abspath

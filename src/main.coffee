@@ -16,10 +16,6 @@ echo                      = CND.echo.bind CND
 #...........................................................................................................
 FS                        = require 'fs'
 PATH                      = require 'path'
-PD                        = require 'pipedreams'
-{ $
-  $async
-  select }                = PD
 { assign
   jr }                    = CND
 { cwd_abspath
@@ -38,87 +34,50 @@ PD                        = require 'pipedreams'
 #...........................................................................................................
 require                   './exception-handler'
 
-
 #-----------------------------------------------------------------------------------------------------------
-@$as_sql = ( S ) =>
-  lnr = 0
-  return $ ( d, send ) =>
-    validate.text ( text = d.value )
-    is_first        = ( d.$first ? false )
-    is_last         = ( d.$last  ? false )
-    default_dest    = S.default_dest
-    default_key     = S.default_key
-    default_realm   = S.default_realm
-    path            = S.file_path
-    #.......................................................................................................
-    if is_first
-      send S.db.create_table_main_first { path, default_dest, default_key, default_realm, }
-    #.......................................................................................................
-    lnr  += +1
-    vnr   = [ lnr, ]
-    comma = if is_last then '' else ','
-    send ( S.db.create_table_main_middle { vnr, text, } ) + comma
-    #.......................................................................................................
-    if is_last
-      send ';'
-  #.........................................................................................................
-  return null
-
-#-----------------------------------------------------------------------------------------------------------
-@_$tee_without_filter = ( bystream ) ->
-  ### Given a `bystream`, send a data down both the mainstream and the bystream. This allows e.g. to log all
-  events to a file sink while continuing to process the same data in the mainline. **NB** that in
-  contradistinction to `pull-tee`, you can only divert to a single by-stream with each call to `PS.$tee` ###
-  return ( require 'pull-tee' ) bystream
-
-#-----------------------------------------------------------------------------------------------------------
-@$tee_compile_sql = ( S, handler ) =>
-  collector = []
-  pipeline  = []
-  pipeline.push PD.$add_position()
-  pipeline.push @$as_sql S
-  # pipeline.push @$as_line()
-  pipeline.push PD.$collect { collector, }
-  # pipeline.push PD.$watch ( collector ) -> debug 'µ52821', collector.join '\n'
-  pipeline.push PD.$drain -> handler null, collector.join '\n'
-  return PD.$tee PD.pull pipeline...
+@_readable_stream_from_text = ( text ) ->
+  ### thx to https://stackoverflow.com/a/22085851/7568091 ###
+  R = new ( require 'stream' ).Readable()
+  R._read = () => {} # redundant?
+  R.push text
+  R.push null
+  return R
 
 #-----------------------------------------------------------------------------------------------------------
 @compile_sql = ( settings ) -> new Promise ( resolve, reject ) =>
-  validate.object settings
-  S = settings
+  READLINE        = require 'readline'
+  S               = settings
   #.........................................................................................................
-  pipeline = []
-  if S.file_path?
-    pipeline.push PD.read_from_file S.file_path
-    pipeline.push PD.$split()
-  else
-    pipeline.push PD.new_value_source S.text.split '\n'
-  pipeline.push @$tee_compile_sql S, ( error, sql ) => resolve sql
-  pipeline.push PD.$drain()
-  PD.pull pipeline...
+  default_dest    = S.default_dest
+  default_key     = S.default_key
+  default_realm   = S.default_realm
+  path            = S.file_path ? '<text>'
   #.........................................................................................................
+  if isa.text S.file_path then  input = FS.createReadStream         S.file_path
+  else                          input = @_readable_stream_from_text S.text
+  ### NOTE use crlfDelay option to recognize all instances of CRLF as a single line break ###
+  reader          = READLINE.createInterface { input, crlfDelay: Infinity, }
+  preamble        = []
+  data            = []
+  lnr             = 0
+  preamble.push S.db.create_table_main_first { path, default_dest, default_key, default_realm, }
+  #.........................................................................................................
+  for await text from reader
+    lnr++
+    data[ last_idx ] += ',' if ( last_idx = data.length - 1 ) > -1
+    vnr               = [ lnr, ]
+    data.push ( S.db.create_table_main_middle { vnr, text, } )
+  if ( last_idx = data.length - 1 ) > -1
+    data[ last_idx ] = data[ last_idx ].replace /,$/g, ''
+  #.........................................................................................................
+  resolve [ preamble..., data..., ';', ].join '\n'
   return null
-
-#-----------------------------------------------------------------------------------------------------------
-_$count = ( step ) ->
-  nr = 0
-  return PD.$watch ( d ) =>
-    nr += +1
-    if ( nr %% step ) is 0
-      whisper 'µ44744', nr
-    return null
 
 #-----------------------------------------------------------------------------------------------------------
 @populate_db = ( me, sql ) -> new Promise ( resolve, reject ) =>
   validate.object me
   me.db.$.execute sql
   resolve { line_count: me.db.$.first_value me.db.count_lines(), }
-
-#-----------------------------------------------------------------------------------------------------------
-@cleanup = ( settings ) -> new Promise ( resolve, reject ) =>
-  settings.remove_tmpfile()
-  resolve()
 
 #-----------------------------------------------------------------------------------------------------------
 @create = ( settings ) -> new Promise ( resolve, reject ) =>
@@ -138,8 +97,9 @@ _$count = ( step ) ->
   me.default_dest         = settings.default_dest   ? 'main'
   me.default_key          = settings.default_key    ? '^line'
   me.default_realm        = settings.default_realm  ? 'input'
-  sql                     = await @compile_sql me
+  sql                     = await MIRAGE.compile_sql me
   { line_count, }         = await @populate_db me, sql
+  me.line_count           = line_count
   resolve me
 
 
@@ -150,18 +110,24 @@ unless module.parent?
     #.......................................................................................................
     settings =
       # file_path:  './README.md'
-      # file_path:  '/usr/share/dict/italian'
+      # file_path:  __filename
+      file_path:  '/usr/share/dict/italian'
       # text:       """
       #   helo world!
       #   some literal text
       #   """
-      file_path:  './db/demo.txt'
+      # file_path:  './db/demo.txt'
       db_path:    './db/mkts.db'
       icql_path:  './db/mkts.icql'
-    mirage = await MIRAGE.create settings
-    # delete mirage.db
-    # debug 'µ69688', mirage
+    t0      = Date.now()
+    mirage  = await MIRAGE.create settings
+    t1      = Date.now()
+    dts     = ( ( t1 - t0 ) / 1000 ).toFixed 3
+    help 'µ77787', "read #{mirage.line_count} lines in #{dts} s"
+    count = 0
     for row from mirage.db.read_lines()
+      count++
+      break if count > 5
       delete row.vnr_blob
       info 'µ33211', jr row
     help 'ok'
