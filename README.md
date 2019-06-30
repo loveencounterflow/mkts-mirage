@@ -27,36 +27,3 @@ performance here and have no clue what's going on).
 
 * https://github.com/loveencounterflow/intershop
 
-<!--
-
-create table test ( idx json );
-
-insert into test values
-( "[42,3]"    ),
-( "[42,2]"    ),
-( "[12]"      ),
-( "[42,0]"    ),
-( "[42]"      ),
-( "[42,null]" ),
-( "[42,10]"   ),
-( "[42,1]"    ),
-( "[42,11]"   );
-
-SELECT * from test order by idx;
-[12]
-[42,0]
-[42,10]
-[42,11]
-[42,1]
-[42,2]
-[42,3]
-[42,null]
-[42]
--->
-
-
-
-
-
-
-
