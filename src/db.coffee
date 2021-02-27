@@ -132,7 +132,7 @@ types                     = require './types'
     R           = assign {}, row
     R.vnr_blob  = db.$.as_hollerith R.vnr
     R.vnr       = jr R.vnr
-    R.stamped   = cast.boolean 'number', R.stamped
+    R.stamped   = if R.stamped then 1 else 0
     return R
   #.........................................................................................................
   db.insert = ( row ) -> db._insert db.cast_row row
