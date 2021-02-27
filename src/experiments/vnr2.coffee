@@ -35,7 +35,6 @@ types                     = require '../types'
   abspath
   relpath }               = require '../helpers'
 #...........................................................................................................
-require                   '../exception-handler'
 MIRAGE                    = require '../..'
 
 
