@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [MKTS Mirage 明快排字機　ミラージュ](#mkts-mirage-%E6%98%8E%E5%BF%AB%E6%8E%92%E5%AD%97%E6%A9%9F%E3%80%80%E3%83%9F%E3%83%A9%E3%83%BC%E3%82%B8%E3%83%A5)
+    - [To Do](#to-do)
+    - [Inspiration](#inspiration)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 # MKTS Mirage 明快排字機　ミラージュ
 
@@ -21,6 +31,7 @@ performance here and have no clue what's going on).
 * [X] Allow consumer to configure `*.db` location, name
 * [X] Implement nested line numbers (so the expansions of line `42` can be indexed as `[42,1]`, `[42,2]`,
   `[42,2,1]` and so on).
+* [ ] ensure that DB can be `MIRAGE.create()`d with empty text, empty file
 
 
 ### Inspiration
